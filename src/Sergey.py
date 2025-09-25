@@ -123,7 +123,11 @@ def image_to_text(image_path):
     return text
 
 # Find the PDF path
+
+#pdf_path = 'C:/Users/Compukter/Desktop/Example.pdf'
+
 pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
+
 
 # Create a pdf file object
 pdfFileObj = open(pdf_path, 'rb')
