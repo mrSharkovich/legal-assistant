@@ -1,22 +1,25 @@
-"""
-This module for Mary's work, LLM engineer.
-"""
 import transformers as tr
-import torch
 
-model_name = "openai/gpt-oss-20b"
-tokenizer = tr.AutoTokenizer.from_pretrained(model_name)
-model = tr.AutoModelForCausalLM.from_pretrained(model_name, device_map="auto")
-pipe = tr.pipeline(
+with open("text.txt", "r", encoding="utf-8", errors='ignore') as file:
+    text = file.readlines()
+
+
+# Создаем pipeline для текстовой генерации
+summarizer = tr.pipeline(
     "text-generation",
-    model=model,
-    tokenizer=tokenizer)
+    model="openai/gpt-oss-20b",
+    device_map="cpu",
+    torch_dtype="auto")
 
-prompt = "Напиши краткое объяснение, что такое искусственный интеллект."
+#Запрос
+messages = [
+    {"role": "user", "content": f"Сделай краткий пересказ этого текста: {text}"}]
 
-messages = [{"content": prompt}]
+result = summarizer(
+    messages,
+    max_new_tokens=150,
+    temperature=0.7,
+)
 
-formatted_prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-
-outputs = pipe(formatted_prompt)
-print(outputs[0]['generated_text'])
+# Печатаем результат
+print(result[0]["generated_text"][-1]["content"])
