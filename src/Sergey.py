@@ -1,10 +1,3 @@
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-=======
->>>>>>> Stashed changes
-# To read the PDF
->>>>>>> 9a753e3ed6051fbc8fc5869a97a804cf4abd7b99
 import PyPDF2
 from pdfminer.high_level import extract_pages, extract_text
 from pdfminer.layout import LTTextContainer, LTChar, LTRect, LTFigure
@@ -18,7 +11,7 @@ import os
 pytesseract.pytesseract.tesseract_cmd = r'C:\Users\Compukter\AppData\Local\Programs\Tesseract-OCR\tesseract.exe'
 
 
-def text_former(pdf_path):
+def text_pages(pdf_path):
     """
     Извлекает текст из PDF файла и возвращает массив строк
 
@@ -80,17 +73,17 @@ def text_former(pdf_path):
         return text
 
     # Основная логика функции
-    all_lines = []
+    pages_array = []
 
     try:
         # Создаем объекты для работы с PDF
         pdfFileObj = open(pdf_path, 'rb')
         pdfReaded = PyPDF2.PdfReader(pdfFileObj)
 
-<<<<<<< HEAD
         # Извлекаем страницы из PDF
         for pagenum, page in enumerate(extract_pages(pdf_path)):
             pageObj = pdfReaded.pages[pagenum]
+            page_lines=[]
             page_text = []
             line_format = []
             text_from_images = []
@@ -99,22 +92,6 @@ def text_former(pdf_path):
             table_num = 0
             first_element = True
             table_extraction_flag = False
-=======
-# Find the PDF path
-<<<<<<< Updated upstream
-
-#pdf_path = 'C:/Users/Compukter/Desktop/Example.pdf'
-
-pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
-
-=======
->>>>>>> Stashed changes
-
-#pdf_path = 'C:/Users/Compukter/Desktop/Example.pdf'
-
-pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
-
->>>>>>> 9a753e3ed6051fbc8fc5869a97a804cf4abd7b99
 
             pdf = pdfplumber.open(pdf_path)
             page_tables = pdf.pages[pagenum]
@@ -141,7 +118,7 @@ pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
                         lines = line_text.strip().split('\n')
                         for line in lines:
                             if line.strip():  # Добавляем только непустые строки
-                                all_lines.append(line.strip())
+                                page_lines.append(line.strip())
                     else:
                         pass
 
@@ -159,7 +136,7 @@ pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
                     lines = image_text.strip().split('\n')
                     for line in lines:
                         if line.strip():
-                            all_lines.append(line.strip())
+                            page_lines.append(line.strip())
 
                 # Обработка таблиц
                 if isinstance(element, LTRect):
@@ -179,7 +156,7 @@ pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
                         lines = table_string.strip().split('\n')
                         for line in lines:
                             if line.strip():
-                                all_lines.append(line.strip())
+                                page_lines.append(line.strip())
 
                     if element.y0 >= lower_side and element.y1 <= upper_side:
                         pass
@@ -187,7 +164,7 @@ pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
                         table_extraction_flag = False
                         first_element = True
                         table_num += 1
-
+            pages_array.append(page_lines)
         # Закрываем файл
         pdfFileObj.close()
 
@@ -200,11 +177,14 @@ pdf_path = 'C:/Users/Compukter/Desktop/Эссе3.pdf'
     except Exception as e:
         print(f"Ошибка при обработке PDF: {e}")
 
-    return all_lines
+    return pages_array
 
 # Пример использования функции:
-pdf_path = 'C:/Users/Compukter/Desktop/Эссе6.pdf'
-lines_array = text_former(pdf_path)
-for i, line in enumerate(lines_array):
-    print(f"{i+1}: {line}")
-# print(lines_array)
+pdf_path = 'C:/Users/Compukter/Desktop/Образец.pdf'
+pag_array = text_pages(pdf_path)
+for page_num, page_lines in enumerate(pag_array):
+    print(f"=== Страница {page_num+1} ===")
+    for line in page_lines:
+        print(line)
+    print()
+# print(pag_array)
