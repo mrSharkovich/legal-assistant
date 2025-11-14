@@ -68,7 +68,12 @@ def something(pdf_path):
                             if cleaned_line:
                                 page_lines.append(cleaned_line)
 
-                    pages_array.append(page_lines)
+                    # ОБЪЕДИНЯЕМ ВСЕ СТРОКИ СТРАНИЦЫ В ОДНУ
+                    if page_lines:
+                        combined_text = ' '.join(page_lines)
+                        pages_array.append([combined_text])  # Одна строка на страницу
+                    else:
+                        pages_array.append([])
 
                     # Удаляем временный файл
                     if os.path.exists(temp_image_path):
@@ -180,7 +185,12 @@ def something(pdf_path):
                                 table_extraction_flag = True
                                 first_element = False
 
-                    pages_array.append(page_lines)
+                    # ОБЪЕДИНЯЕМ ВСЕ СТРОКИ СТРАНИЦЫ В ОДНУ
+                    if page_lines:
+                        combined_text = ' '.join(page_lines)
+                        pages_array.append([combined_text])  # Одна строка на страницу
+                    else:
+                        pages_array.append([])
 
                 pdfFileObj.close()
                 pdf.close()
@@ -211,7 +221,13 @@ def something(pdf_path):
                                     cleaned_line = line.strip()
                                     if cleaned_line:
                                         page_lines.append(cleaned_line)
-                    pages_array.append(page_lines)
+
+                    # ОБЪЕДИНЯЕМ ВСЕ СТРОКИ СТРАНИЦЫ В ОДНУ
+                    if page_lines:
+                        combined_text = ' '.join(page_lines)
+                        pages_array.append([combined_text])  # Одна строка на страницу
+                    else:
+                        pages_array.append([])
             except:
                 try:
                     with open(pdf_path, 'rb') as file:
@@ -220,8 +236,8 @@ def something(pdf_path):
                             text = page.extract_text()
                             text = clean_cid_text(text)
                             if text:
-                                lines = [line.strip() for line in text.split('\n') if line.strip()]
-                                pages_array.append(lines)
+                                # Уже одна строка - просто добавляем
+                                pages_array.append([text.strip()])
                             else:
                                 pages_array.append([])
                 except:
@@ -261,6 +277,9 @@ def something(pdf_path):
 
 # Пример использования
 if __name__ == "__main__":
-    pdf_path = 'C:/Users/Compukter/Desktop/Проект/004.pdf'
+    pdf_path = 'C:/Users/Compukter/Desktop/Проект/Образец20.pdf'
     pages_array = something(pdf_path)
-    print(pages_array)
+
+    # Вывод - каждая страница это одна строка
+    for page_lines in pages_array:
+        print(page_lines)
