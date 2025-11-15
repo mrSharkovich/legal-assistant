@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
 
-#  настройки плагинов qt
+# Настройки плагинов qt
 if hasattr(QtCore, 'QT_VERSION_STR'):
     os.environ['QT_QPA_PLATFORM_PLUGIN_PATH'] = os.path.join(
         os.path.dirname(QtCore.__file__),
@@ -314,12 +314,16 @@ class Ui_ResultWindow(object):
         self.centralwidget = QtWidgets.QWidget(ResultWindow)
         self.centralwidget.setObjectName("centralwidget")
 
-        # список для результатов
-        self.listView = QtWidgets.QListView(self.centralwidget)
-        self.listView.setGeometry(QtCore.QRect(50, 50, 800, 400))
-        self.listView.setObjectName("listView")
+        self.textEdit = QtWidgets.QTextEdit(self.centralwidget)
+        self.textEdit.setGeometry(QtCore.QRect(50, 50, 800, 400))
+        self.textEdit.setReadOnly(True)  # Делаем только для чтения
+        self.textEdit.setObjectName("textEdit")
 
-        # Кнопка сохранения (перенесена влево)
+        # Устанавливаем перенос слов
+        self.textEdit.setLineWrapMode(QtWidgets.QTextEdit.WidgetWidth)
+        self.textEdit.setWordWrapMode(QtGui.QTextOption.WrapAtWordBoundaryOrAnywhere)
+
+        # Кнопка сохранения
         self.pushButton = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton.setGeometry(QtCore.QRect(50, 480, 141, 51))
         self.pushButton.setObjectName("pushButton")
@@ -370,8 +374,10 @@ class MainApplication:
         self.result_ui.setupUi(self.result_window)
 
         self.connect_signals()
-
         self.setup_result_data()
+
+    def setup_result_data(self):
+        pass
 
     def connect_signals(self):
         self.welcome_ui.pushButton_3.clicked.connect(self.cancel_installation)
@@ -391,10 +397,6 @@ class MainApplication:
 
         self.analysis_ui.start_button.setEnabled(False)
         self.selected_file = None
-
-    def setup_result_data(self):
-        self.result_model = QtGui.QStandardItemModel()
-        self.result_ui.listView.setModel(self.result_model)
 
     def show_welcome_window(self):
         self.hide_all_windows()
@@ -483,13 +485,9 @@ class MainApplication:
         # Вызываем magic_function и добавляем результат
         result = magic_function(self.selected_file, selected_tags)
 
-        # Добавляем результаты в result window
-        self.result_model.clear()
-        results = [result]
-
-        for result_text in results:
-            item = QtGui.QStandardItem(result_text)
-            self.result_model.appendRow(item)
+        # Отображаем результаты
+        self.result_ui.textEdit.clear()
+        self.result_ui.textEdit.setText(result)
 
         self.show_result_window()
 
@@ -511,12 +509,10 @@ class MainApplication:
         )
         if file_name:
             try:
-                data = []
-                for row in range(self.result_model.rowCount()):
-                    item = self.result_model.item(row)
-                    data.append(item.text())
+                # Получаем текст из QTextEdit
+                text_content = self.result_ui.textEdit.toPlainText()
                 with open(file_name, 'w', encoding='utf-8') as file:
-                    file.write('\n'.join(data))
+                    file.write(text_content)
                 QtWidgets.QMessageBox.information(
                     self.result_window,
                     "Успех",
