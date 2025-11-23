@@ -110,7 +110,7 @@ class Ui_WelcomWindow(object):
 
         # label
         self.label_2 = QtWidgets.QLabel(
-            "Карманный юридичный помощник\n"
+            "Карманный юридический помощник\n"
             "Просто загрузите файл — получите\n"
             "краткое описание, без юридических сложностей.\n\n\n\n\n"
             "Нажмите Далее, чтобы продолжить, или Отмена, чтобы выйти из мастера установки."
@@ -224,7 +224,7 @@ class Ui_AgreementWindow(object):
 class Ui_AnalysisWindow(object):
     def setupUi(self, AnalysisWindow):
         AnalysisWindow.setObjectName("AnalysisWindow")
-        AnalysisWindow.resize(1142, 613)
+        AnalysisWindow.resize(1142, 650)
         self.centralwidget = QtWidgets.QWidget(AnalysisWindow)
         self.centralwidget.setObjectName("centralwidget")
 
@@ -251,42 +251,50 @@ class Ui_AnalysisWindow(object):
         self.tags_group.setFont(font)
 
         self.scroll_area = QtWidgets.QScrollArea(self.tags_group)
-        self.scroll_area.setGeometry(QtCore.QRect(10, 30, 331, 210))
+        self.scroll_area.setGeometry(QtCore.QRect(10, 30, 331, 160))
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAsNeeded)
-        self.scroll_area.setFrameStyle(QtWidgets.QFrame.NoFrame)  # Убираем рамку
+        self.scroll_area.setFrameStyle(QtWidgets.QFrame.NoFrame)
 
         self.tags_widget = QtWidgets.QWidget()
-        self.tags_widget.setStyleSheet("background-color: transparent;")  # Прозрачный фон
+        self.tags_widget.setStyleSheet("background-color: transparent;")
         self.tags_layout = QtWidgets.QVBoxLayout(self.tags_widget)
-        self.tags_layout.setContentsMargins(0, 0, 0, 0)  # Убираем отступы
+        self.tags_layout.setContentsMargins(0, 0, 0, 0)
 
         # Список тегов
-        self.tags = [
-            "Право", "Расторжение", "Оферта", "Срок", "Аренда", "Гарантия", "Регламент",
-            "Срок истечения договора и вступления договора в силу",
-            "Соглашение о неразглашении",
-            "Перечень персональных данных, предоставленных на обработку",
-            "Испытательный срок",
-            "Основания расторжения договор",
-            "Режим труда и отдыха",
-            "Права и обязанности сторон",
-            "Материальная ответственность"
-        ]
+        self.tags = []
         self.checkboxes = []
+        self.load_tags()  # Загружаем теги из файла
 
         for tag in self.tags:
             checkbox = QtWidgets.QCheckBox(tag)
             checkbox.setFont(font)
-            checkbox.setStyleSheet("QCheckBox { background-color: transparent; }")  # Прозрачные чекбоксы
+            checkbox.setStyleSheet("QCheckBox { background-color: transparent; }")
             self.tags_layout.addWidget(checkbox)
             self.checkboxes.append(checkbox)
 
         self.tags_layout.addStretch()
         self.scroll_area.setWidget(self.tags_widget)
 
-        # добавления тегов
-        self.add_tags_button = QtWidgets.QPushButton("Добавить теги", self.centralwidget)
+        # Группа для добавления новых тегов
+        self.add_tags_group = QtWidgets.QGroupBox("Добавить новый тег", self.tags_group)
+        self.add_tags_group.setGeometry(QtCore.QRect(10, 190, 331, 80))
+        font_small = QtGui.QFont()
+        font_small.setPointSize(10)
+        self.add_tags_group.setFont(font_small)
+
+        # Поле для ввода нового тега
+        self.new_tag_input = QtWidgets.QLineEdit(self.add_tags_group)
+        self.new_tag_input.setGeometry(QtCore.QRect(10, 25, 200, 30))
+        self.new_tag_input.setPlaceholderText("Введите новый тег")
+
+        # Кнопка добавления тега
+        self.add_tag_button = QtWidgets.QPushButton("Добавить", self.add_tags_group)
+        self.add_tag_button.setGeometry(QtCore.QRect(220, 25, 100, 30))
+        self.add_tag_button.setFont(font_small)
+
+        # добавления тегов в список выбранных
+        self.add_tags_button = QtWidgets.QPushButton("Добавить теги в список", self.centralwidget)
         self.add_tags_button.setGeometry(QtCore.QRect(50, 460, 351, 41))
         font = QtGui.QFont()
         font.setPointSize(12)
@@ -339,6 +347,49 @@ class Ui_AnalysisWindow(object):
         self.retranslateUi(AnalysisWindow)
         QtCore.QMetaObject.connectSlotsByName(AnalysisWindow)
 
+    def load_tags(self):
+        """Загружает теги из файла"""
+        try:
+            with open("src/docs_for_users/tags.txt", "r", encoding="utf-8", errors='ignore') as file:
+                self.tags = [line.strip() for line in file if line.strip()]
+        except FileNotFoundError:
+            # Если файл не существует, создаем пустой список
+            self.tags = []
+            # Создаем директорию, если она не существует
+            os.makedirs("src/docs_for_users", exist_ok=True)
+            # Создаем пустой файл
+            with open("src/docs_for_users/tags.txt", "w", encoding="utf-8") as file:
+                pass
+
+    def save_tags(self):
+        """Сохраняет теги в файл"""
+        try:
+            with open("src/docs_for_users/tags.txt", "w", encoding="utf-8") as file:
+                for tag in self.tags:
+                    file.write(tag + "\n")
+        except Exception as e:
+            print(f"Ошибка при сохранении тегов: {e}")
+
+    def add_new_tag(self, tag):
+        """Добавляет новый тег в список и сохраняет в файл"""
+        if tag and tag not in self.tags:
+            self.tags.append(tag)
+            self.save_tags()
+
+            # Добавляем новый чекбокс
+            checkbox = QtWidgets.QCheckBox(tag)
+            font = QtGui.QFont()
+            font.setPointSize(14)
+            checkbox.setFont(font)
+            checkbox.setStyleSheet("QCheckBox { background-color: transparent; }")
+
+            # Вставляем перед stretch
+            self.tags_layout.insertWidget(self.tags_layout.count() - 1, checkbox)
+            self.checkboxes.append(checkbox)
+
+            return True
+        return False
+
     def retranslateUi(self, AnalysisWindow):
         _translate = QtCore.QCoreApplication.translate
         AnalysisWindow.setWindowTitle(_translate("AnalysisWindow", "Анализ документов"))
@@ -347,7 +398,8 @@ class Ui_AnalysisWindow(object):
         self.start_button.setText(_translate("AnalysisWindow", "Старт"))
         self.back_button.setText(_translate("AnalysisWindow", "Назад"))
         self.file_label.setText(_translate("AnalysisWindow", "Файл не выбран"))
-        self.add_tags_button.setText(_translate("AnalysisWindow", "Добавить теги"))
+        self.add_tags_button.setText(_translate("AnalysisWindow", "Добавить теги в список"))
+
 
 
 class Ui_ResultWindow(object):
@@ -461,11 +513,38 @@ class MainApplication:
         self.analysis_ui.start_button.clicked.connect(self.start_processing)
         self.analysis_ui.info_button.clicked.connect(self.show_info)
 
+        # Подключаем кнопку добавления нового тега
+        self.analysis_ui.add_tag_button.clicked.connect(self.add_new_tag_handler)
+
         self.result_ui.pushButton.clicked.connect(self.save_file)
         self.result_ui.back_to_analysis_button.clicked.connect(self.show_analysis_window)
 
         self.analysis_ui.start_button.setEnabled(False)
         self.selected_file = None
+
+    def add_new_tag_handler(self):
+        """Обработчик добавления нового тега"""
+        new_tag = self.analysis_ui.new_tag_input.text().strip()
+        if new_tag:
+            if self.analysis_ui.add_new_tag(new_tag):
+                self.analysis_ui.new_tag_input.clear()
+                QtWidgets.QMessageBox.information(
+                    self.analysis_window,
+                    "Успех",
+                    f"Тег '{new_tag}' успешно добавлен!"
+                )
+            else:
+                QtWidgets.QMessageBox.warning(
+                    self.analysis_window,
+                    "Предупреждение",
+                    "Такой тег уже существует или введен пустой тег!"
+                )
+        else:
+            QtWidgets.QMessageBox.warning(
+                self.analysis_window,
+                "Ошибка",
+                "Введите текст тега!"
+            )
 
     def show_welcome_window(self):
         self.hide_all_windows()
