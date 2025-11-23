@@ -3,6 +3,8 @@ from src.LLM.llm_functions import simple_summary_no_tags, summary_with_tags
 import os
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
+import threading
+import time
 
 # Настройки плагинов qt
 if hasattr(QtCore, 'QT_VERSION_STR'):
@@ -28,17 +30,44 @@ def magic_function(file_path, selected_tags):
         res += f"Краткое содержание:\n{simple_summary}\n"
         if selected_tags:
             selected_tags_string = ', '.join(selected_tags)
-            for i in range (len(selected_tags)):
+            for i in range(len(selected_tags)):
                 tag_text = summary_with_tags(all_extracted_text, selected_tags[i])
                 res += f"Тег {selected_tags[i]}:\n{tag_text}\n"
         return res
+
+
+class Ui_ProcessingWindow(object):
+    def setupUi(self, ProcessingWindow):
+        ProcessingWindow.setObjectName("ProcessingWindow")
+        ProcessingWindow.resize(400, 200)
+        ProcessingWindow.setFixedSize(400, 200)
+
+        self.centralwidget = QtWidgets.QWidget(ProcessingWindow)
+        self.centralwidget.setObjectName("centralwidget")
+
+        layout = QtWidgets.QVBoxLayout(self.centralwidget)
+
+        # Текст с информацией о процессе
+        self.label = QtWidgets.QLabel("Идет процесс суммаризации...")
+        self.label.setAlignment(QtCore.Qt.AlignCenter)
+        font = QtGui.QFont()
+        font.setPointSize(14)
+        self.label.setFont(font)
+        layout.addWidget(self.label)
+
+        # Индикатор загрузки
+        self.progress_bar = QtWidgets.QProgressBar()
+        self.progress_bar.setRange(0, 0)  # Бесконечная анимация
+        layout.addWidget(self.progress_bar)
+
+        ProcessingWindow.setCentralWidget(self.centralwidget)
 
 
 class Ui_WelcomWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
-        MainWindow.setWindowTitle("Installation Wizard")
+        MainWindow.setWindowTitle("Мастер установки")
         MainWindow.setFixedSize(800, 600)
 
         self.centralwidget = QtWidgets.QWidget(MainWindow)
@@ -73,7 +102,7 @@ class Ui_WelcomWindow(object):
         right_layout = QtWidgets.QVBoxLayout(right_widget)
 
         # Welcome label
-        self.label = QtWidgets.QLabel("Welcome")
+        self.label = QtWidgets.QLabel("Добро пожаловать")
         font = QtGui.QFont()
         font.setPointSize(20)
         self.label.setFont(font)
@@ -81,10 +110,10 @@ class Ui_WelcomWindow(object):
 
         # label
         self.label_2 = QtWidgets.QLabel(
-            "The installation wizard allows you\n"
-            "to change how the components are installed\n"
-            "on your computer or remove them from your computer.\n"
-            "Click Next to continue, or Cancel to exit the Installation Wizard."
+            "Карманный юридичный помощник\n"
+            "Просто загрузите файл — получите\n"
+            "краткое описание, без юридических сложностей.\n\n\n\n\n"
+            "Нажмите Далее, чтобы продолжить, или Отмена, чтобы выйти из мастера установки."
         )
         font = QtGui.QFont()
         font.setPointSize(12)
@@ -93,8 +122,8 @@ class Ui_WelcomWindow(object):
         self.label_2.setWordWrap(True)
 
         button_layout = QtWidgets.QHBoxLayout()
-        self.pushButton = QtWidgets.QPushButton("Next")
-        self.pushButton_3 = QtWidgets.QPushButton("Cancel")
+        self.pushButton = QtWidgets.QPushButton("Далее")
+        self.pushButton_3 = QtWidgets.QPushButton("Отмена")
 
         button_layout.addStretch()
         button_layout.addWidget(self.pushButton)
@@ -366,6 +395,24 @@ class Ui_ResultWindow(object):
         self.back_to_analysis_button.setText(_translate("ResultWindow", "Вернуться к обработке файлов"))
 
 
+class ProcessingThread(QtCore.QThread):
+    """Поток для выполнения обработки файла"""
+    finished_signal = QtCore.pyqtSignal(str)
+    error_signal = QtCore.pyqtSignal(str)
+
+    def __init__(self, file_path, selected_tags):
+        super().__init__()
+        self.file_path = file_path
+        self.selected_tags = selected_tags
+
+    def run(self):
+        try:
+            result = magic_function(self.file_path, self.selected_tags)
+            self.finished_signal.emit(result)
+        except Exception as e:
+            self.error_signal.emit(str(e))
+
+
 class MainApplication:
     def __init__(self):
         self.app = QtWidgets.QApplication(sys.argv)
@@ -387,8 +434,16 @@ class MainApplication:
         self.result_ui = Ui_ResultWindow()
         self.result_ui.setupUi(self.result_window)
 
+        # Добавляем окно обработки
+        self.processing_window = QtWidgets.QMainWindow()
+        self.processing_ui = Ui_ProcessingWindow()
+        self.processing_ui.setupUi(self.processing_window)
+
         self.connect_signals()
         self.setup_result_data()
+
+        # Переменная для хранения потока обработки
+        self.processing_thread = None
 
     def setup_result_data(self):
         pass
@@ -424,6 +479,10 @@ class MainApplication:
         self.hide_all_windows()
         self.analysis_window.show()
 
+    def show_processing_window(self):
+        self.hide_all_windows()
+        self.processing_window.show()
+
     def show_result_window(self):
         self.hide_all_windows()
         self.result_window.show()
@@ -433,6 +492,7 @@ class MainApplication:
         self.agreement_window.hide()
         self.analysis_window.hide()
         self.result_window.hide()
+        self.processing_window.hide()
 
     def cancel_installation(self):
         reply = QtWidgets.QMessageBox.question(
@@ -496,14 +556,36 @@ class MainApplication:
         selected_tags = [self.analysis_ui.tags_list.item(i).text()
                          for i in range(self.analysis_ui.tags_list.count())]
 
-        # Вызываем magic_function и добавляем результат
-        result = magic_function(self.selected_file, selected_tags)
+        # Показываем окно обработки
+        self.show_processing_window()
 
+        # Запускаем обработку в отдельном потоке
+        self.processing_thread = ProcessingThread(self.selected_file, selected_tags)
+        self.processing_thread.finished_signal.connect(self.on_processing_finished)
+        self.processing_thread.error_signal.connect(self.on_processing_error)
+        self.processing_thread.start()
+
+    def on_processing_finished(self, result):
         # Отображаем результаты
         self.result_ui.textEdit.clear()
         self.result_ui.textEdit.setText(result)
-
         self.show_result_window()
+
+        # Очищаем поток
+        self.processing_thread = None
+
+    def on_processing_error(self, error_msg):
+        # Скрываем окно обработки и показываем ошибку
+        self.hide_all_windows()
+        QtWidgets.QMessageBox.critical(
+            self.analysis_window,
+            "Ошибка обработки",
+            f"Произошла ошибка при обработке файла: {error_msg}"
+        )
+        self.show_analysis_window()
+
+        # Очищаем поток
+        self.processing_thread = None
 
     def show_info(self):
         QtWidgets.QMessageBox.information(

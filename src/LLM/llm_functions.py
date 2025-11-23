@@ -2,7 +2,7 @@ import torch
 from transformers import T5ForConditionalGeneration, GPT2Tokenizer
 
 def simple_summary_no_tags(text):
-    num_token = round((len(text)//200)*30)
+    num_token = round((len(text)//200)*40)
     model_name = "RussianNLP/FRED-T5-Summarizer"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     prefix = "<LM> Сократи текст.\n "
@@ -18,12 +18,12 @@ def simple_summary_no_tags(text):
         max_new_tokens=num_token,
         do_sample=True,
         no_repeat_ngram_size=4,
-        top_p=0.9)
+        top_p=0.9, early_stopping=True)
     summary = tokenizer.decode(outputs[0][1:], skip_special_tokens=True)
     return summary
 
 def summary_with_tags(text, keyword):
-    num_token = round((len(text)//200)*15)
+    num_token = round((len(text)//200)*20)
     model_name = "RussianNLP/FRED-T5-Summarizer"
     device = "cuda" if torch.cuda.is_available() else "cpu"
     prefix = "<LM> Сократи текст.\n "
@@ -41,6 +41,6 @@ def summary_with_tags(text, keyword):
         max_new_tokens=num_token,
         do_sample=True,
         no_repeat_ngram_size=4,
-        top_p=0.9)
+        top_p=0.9, early_stopping=True)
     summary = tokenizer.decode(outputs[0][1:], skip_special_tokens=True)
     return summary
