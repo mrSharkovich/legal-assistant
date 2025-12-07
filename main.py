@@ -3,8 +3,7 @@ from src.LLM.llm_functions import simple_summary_no_tags, summary_with_tags
 import os
 import sys
 from PyQt5 import QtCore, QtGui, QtWidgets
-import threading
-import time
+
 
 # Настройки плагинов qt
 if hasattr(QtCore, 'QT_VERSION_STR'):
@@ -20,6 +19,9 @@ def magic_function(file_path, selected_tags):
     res = ""
     extracted_text = parsing.text_extract(file_path)
     selected_tags_string = ""
+    text_length = len(extracted_text)
+    if text_length >= 2000:
+        return "Текст слишком большой, разделите его на части и попробуйте снова!"
     if extracted_text == "Ошибка при обработке файла":
         return "Ошибка при обработке файла"
     else:
@@ -41,12 +43,9 @@ class Ui_ProcessingWindow(object):
         ProcessingWindow.setObjectName("ProcessingWindow")
         ProcessingWindow.resize(400, 200)
         ProcessingWindow.setFixedSize(400, 200)
-
         self.centralwidget = QtWidgets.QWidget(ProcessingWindow)
         self.centralwidget.setObjectName("centralwidget")
-
         layout = QtWidgets.QVBoxLayout(self.centralwidget)
-
         # Текст с информацией о процессе
         self.label = QtWidgets.QLabel("Идет процесс суммаризации...")
         self.label.setAlignment(QtCore.Qt.AlignCenter)
@@ -54,12 +53,10 @@ class Ui_ProcessingWindow(object):
         font.setPointSize(14)
         self.label.setFont(font)
         layout.addWidget(self.label)
-
         # Индикатор загрузки
         self.progress_bar = QtWidgets.QProgressBar()
         self.progress_bar.setRange(0, 0)  # Бесконечная анимация
         layout.addWidget(self.progress_bar)
-
         ProcessingWindow.setCentralWidget(self.centralwidget)
 
 
@@ -69,23 +66,18 @@ class Ui_WelcomWindow(object):
         MainWindow.resize(800, 600)
         MainWindow.setWindowTitle("Мастер установки")
         MainWindow.setFixedSize(800, 600)
-
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
-
         main_layout = QtWidgets.QHBoxLayout(self.centralwidget)
-
         left_widget = QtWidgets.QWidget()
         left_layout = QtWidgets.QVBoxLayout(left_widget)
         self.label_3 = QtWidgets.QLabel()
         self.label_3.setAlignment(QtCore.Qt.AlignCenter)
-
         try:
             # Получаем абсолютный путь к директории скрипта
             current_dir = os.path.dirname(os.path.abspath(__file__))
             # image_path = os.path.join(current_dir, "main_picture.jpg")
             image_path = "main_picture.jpg"
-
             pixmap = QtGui.QPixmap(image_path)
             if pixmap.isNull():
                 raise FileNotFoundError
@@ -93,21 +85,17 @@ class Ui_WelcomWindow(object):
         except:
             self.label_3.setStyleSheet("background-color: lightgray; border: 1px solid gray;")
             self.label_3.setFixedSize(300, 500)
-
         left_layout.addWidget(self.label_3)
         left_widget.setFixedWidth(350)
-
         # Right side - Content
         right_widget = QtWidgets.QWidget()
         right_layout = QtWidgets.QVBoxLayout(right_widget)
-
         # Welcome label
         self.label = QtWidgets.QLabel("Добро пожаловать")
         font = QtGui.QFont()
         font.setPointSize(20)
         self.label.setFont(font)
         self.label.setAlignment(QtCore.Qt.AlignCenter)
-
         # label
         self.label_2 = QtWidgets.QLabel(
             "Карманный юридический помощник\n"
@@ -348,12 +336,13 @@ class Ui_AnalysisWindow(object):
         QtCore.QMetaObject.connectSlotsByName(AnalysisWindow)
 
     def load_tags(self):
-        """Загружает теги из файла"""
+        """
+        Загружает теги из файла
+        """
         try:
             with open("src/docs_for_users/tags.txt", "r", encoding="utf-8", errors='ignore') as file:
                 self.tags = [line.strip() for line in file if line.strip()]
-        except FileNotFoundError:
-            # Если файл не существует, создаем пустой список
+        except FileNotFoundError:# Если файл не существует, создаем пустой список
             self.tags = []
             # Создаем директорию, если она не существует
             os.makedirs("src/docs_for_users", exist_ok=True)
@@ -362,7 +351,9 @@ class Ui_AnalysisWindow(object):
                 pass
 
     def save_tags(self):
-        """Сохраняет теги в файл"""
+        """
+        Сохраняет теги в файл
+        """
         try:
             with open("src/docs_for_users/tags.txt", "w", encoding="utf-8") as file:
                 for tag in self.tags:
@@ -371,22 +362,21 @@ class Ui_AnalysisWindow(object):
             print(f"Ошибка при сохранении тегов: {e}")
 
     def add_new_tag(self, tag):
-        """Добавляет новый тег в список и сохраняет в файл"""
+        """
+        Добавляет новый тег в список и сохраняет в файл
+        """
         if tag and tag not in self.tags:
             self.tags.append(tag)
             self.save_tags()
-
             # Добавляем новый чекбокс
             checkbox = QtWidgets.QCheckBox(tag)
             font = QtGui.QFont()
             font.setPointSize(14)
             checkbox.setFont(font)
             checkbox.setStyleSheet("QCheckBox { background-color: transparent; }")
-
             # Вставляем перед stretch
             self.tags_layout.insertWidget(self.tags_layout.count() - 1, checkbox)
             self.checkboxes.append(checkbox)
-
             return True
         return False
 
